@@ -28,6 +28,8 @@ DigitalOut led1(LED1);
 
 m3pi m3pi1;
 
+float bound( float x, float x_min, float x_max );
+
 // u == 0  ==>  steer straight
 // u > 0   ==>  steer right
 // u < 0   ==>  steer left
@@ -54,40 +56,71 @@ int main() {
 
     // error = setpoint - plant output
     float e = 0.0f;
+    float e_cumulative = 0.0f;
+    float de = 0.0f;
+    float e_previous = 0.0f;
+
+    // PID controller constants
+    float kp = 1.0f;
+    float ki = 0.0f;
+    float kd = 0.0f;
 
     // control input aka steering command
     float u = 0.0f;
 
     while (true) {
         led1 = !led1;
+
+        // measure error
         y = m3pi1.line_position();
         e = r - y;
-        u = e;
+        e_cumulative += e;
+        de = e - e_previous;
+
+        // calculate command
+        u = -1.0f * (kp * e + ki * e_cumulative + kd * de);
+
+        // execute command
         steer( u );
+
+        // advance in time
+        e_previous = e;
     }
 }
+
+
+float bound( float x, float x_min, float x_max )
+{
+   float y = 0.0;
+
+   if( x >= x_min )
+   {
+      if( x <= x_max )
+      {
+         y = x;
+      }
+      else
+      {
+         y = x_max;
+      }
+   }
+   else
+   {
+      y = x_min;
+   }
+
+   return y;
+}
+
 
 void steer( float u )
 {
     const float straight_speed = 0.1f;
 
-    // "Bang-bang" / "on-off" control logic
+    float left_speed = bound( ((1.0f - u) * straight_speed), 0.0f, 1.0f );
+    float right_speed = bound( ((1.0f + u) * straight_speed), 0.0f, 1.0f );
 
-    // Steer left
-    if( u < 0.0f )
-    {
-       m3pi1.left_motor( 0.0f );
-       m3pi1.right_motor( straight_speed );
-    }
-    // Steer right
-    else if( u > 0.0f )
-    {
-       m3pi1.left_motor( straight_speed );
-       m3pi1.right_motor( 0.0f );
-    }
-    // Steer straight
-    else
-    {
-       m3pi1.forward( straight_speed );
-    }
+    m3pi1.left_motor( left_speed );
+    m3pi1.right_motor( right_speed );
 }
+
