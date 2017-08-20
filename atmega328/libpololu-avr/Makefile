@@ -1,6 +1,6 @@
 # NOTE: to compile with avr-gcc less than verson 4.2.3, you must
 # remove the atmega328p from the list of target devices below:
-devices := atmega48 atmega168 atmega328p atmega324p atmega644p atmega1284p atmega1284p_x2
+devices := atmega328p
 mcu_atmega48 := atmega48
 mcu_atmega168 := atmega168
 mcu_atmega328p := atmega328p
