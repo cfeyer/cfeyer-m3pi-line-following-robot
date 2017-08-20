@@ -21,6 +21,8 @@
 
 #include "serial-slave.h"
 
+#include "follow-main.h"
+
 // Introductory messages.  The "PROGMEM" identifier causes the data to
 // go into program space.
 const char welcome_line1[] PROGMEM = " Pololu";
@@ -48,6 +50,7 @@ const char menu_motor_test[] PROGMEM = "Motors";
 const char menu_music_test[] PROGMEM = "Music";
 const char menu_pot_test[] PROGMEM = "Trimpot";
 const char menu_time_test[] PROGMEM = "Timer";
+const char menu_follow[] PROGMEM = "Follow";
 
 const char menu_line2[] PROGMEM = "\x7f" "A \xa5" "B C\x7e";
 const char back_line2[] PROGMEM = "\6B";
@@ -62,8 +65,8 @@ void music_test();
 void time_test();
 void pot_test();
 typedef void (*function)();
-const function main_menu_functions[] = { bat_test, led_test, pot_test, ir_test, motor_test, music_test, time_test };
-const char *main_menu_options[] = { menu_bat_test, menu_led_test, menu_pot_test, menu_ir_test, menu_motor_test, menu_music_test, menu_time_test };
+const function main_menu_functions[] = { bat_test, led_test, pot_test, ir_test, motor_test, music_test, time_test, follow_main };
+const char *main_menu_options[] = { menu_bat_test, menu_led_test, menu_pot_test, menu_ir_test, menu_motor_test, menu_music_test, menu_time_test, menu_follow };
 const char main_menu_length = sizeof(main_menu_options)/sizeof(main_menu_options[0]);
 
 // A couple of simple tunes, stored in program space.

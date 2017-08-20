@@ -13,7 +13,7 @@ LDFLAGS=-Wl,-gc-sections -lpololu_$(DEVICE) -Wl,-relax
 PORT ?= /dev/ttyACM0
 AVRDUDE=avrdude
 TARGET=test
-OBJECT_FILES=demo.o serial-slave.o
+OBJECT_FILES=demo.o serial-slave.o follow-main.o
 
 all: $(TARGET).hex
 
