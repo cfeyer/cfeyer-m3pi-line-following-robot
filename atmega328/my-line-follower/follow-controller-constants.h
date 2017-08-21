@@ -1,7 +1,7 @@
 #ifndef CONTROLLER_CONSTANTS_H
 #define CONTROLLER_CONSTANTS_H
 
-const float kp = 0.8f;
+const float kp = 1.0f;
 const float ki = 0.0f;
 const float kd = 0.0f;
 

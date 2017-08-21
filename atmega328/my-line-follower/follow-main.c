@@ -85,10 +85,25 @@ float bound( float x, float x_min, float x_max )
 
 void actuate_steer_command_left( float steer_command_left )
 {
-    const float straight_speed = 0.1f;
+    float steer_command_left_bounded = bound( steer_command_left, -1.0f, 1.0f );
 
-    float left_speed = bound( ((1.0f - steer_command_left) * straight_speed), 0.0f, 1.0f );
-    float right_speed = bound( ((1.0f + steer_command_left) * straight_speed), 0.0f, 1.0f );
+    const float straight_speed = initial_straight_speed;
+
+    float bias = fabsf( steer_command_left_bounded );
+
+    float left_speed = straight_speed;
+    float right_speed = straight_speed;
+
+    if( steer_command_left_bounded > 0.0f ) // steer left
+    {
+       left_speed = left_speed - (bias * left_speed);
+       left_speed = bound( left_speed, 0.0f, 1.0f );
+    }
+    if( steer_command_left_bounded < 0.0f ) // steer right
+    {
+       right_speed = right_speed - (bias * right_speed);
+       right_speed = bound( right_speed, 0.0f, 1.0f );
+    }
 
     set_motors( (int)(left_speed * 255.0f),
                 (int)(right_speed * 255.0f) );
