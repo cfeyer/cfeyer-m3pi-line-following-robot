@@ -149,6 +149,8 @@ void follow_main()
 
    while( !button_is_pressed(BUTTON_B) )
    {
+      time_reset();
+
       unsigned int sensor_readings[5] = {0};
       int raw_line_position = read_line( sensor_readings, IR_EMITTERS_ON );
 
@@ -179,6 +181,18 @@ void follow_main()
       else
       {
          set_motors( 0, 0 );
+      }
+
+      if( get_ms() < 10 )
+      {
+         while(get_ms() < 10);
+      }
+      else
+      {
+         clear();
+         lcd_goto_xy(0,0);
+         print( "overrun" );
+         while(1);
       }
    }
 
