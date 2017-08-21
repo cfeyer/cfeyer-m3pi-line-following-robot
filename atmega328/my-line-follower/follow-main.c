@@ -2,24 +2,61 @@
 
 #include <pololu/3pi.h>
 #include <avr/pgmspace.h>
+#include <math.h>
+#include <stdio.h>
 
 #include "follow-controller-constants.h"
 
 static const char back_line2[] PROGMEM = "\6B";
 
+static void calibrate_rotate_left()
+{
+   time_reset();
+   set_motors(60, -60);
+   while(get_ms() < 250)
+   {
+      calibrate_line_sensors(IR_EMITTERS_ON);
+   }
+   set_motors(0, 0);
+}
+
+static void calibrate_rotate_right()
+{
+   time_reset();
+   set_motors(-60, 60);
+   while(get_ms() < 250)
+   {
+      calibrate_line_sensors(IR_EMITTERS_ON);
+   }
+   set_motors(0, 0);
+}
+
 static void auto_calibrate() // Borrow from Pololu's serial-slave.c
 {
-        time_reset();
-        set_motors(60, -60);
-        while(get_ms() < 250)
-                calibrate_line_sensors(IR_EMITTERS_ON);
-        set_motors(-60, 60);
-        while(get_ms() < 750)
-                calibrate_line_sensors(IR_EMITTERS_ON);
-        set_motors(60, -60);
-        while(get_ms() < 1000)
-                calibrate_line_sensors(IR_EMITTERS_ON);
-        set_motors(0, 0);
+   const int rest_delay_ms = 250;
+
+   time_reset();
+   while( get_ms() < rest_delay_ms );
+
+   calibrate_rotate_left();
+
+   time_reset();
+   while( get_ms() < rest_delay_ms );
+
+   calibrate_rotate_right();
+
+   time_reset();
+   while( get_ms() < rest_delay_ms );
+
+   calibrate_rotate_right();
+
+   time_reset();
+   while( get_ms() < rest_delay_ms );
+
+   calibrate_rotate_left();
+
+   time_reset();
+   while( get_ms() < rest_delay_ms );
 }
 
 float sense_line_position_left()
@@ -68,7 +105,6 @@ void actuate_steer_command_left( float steer_command_left )
 void follow_main()
 {
    clear();
-
    lcd_goto_xy(0,1);
    print_from_program_space(back_line2);
 
@@ -77,6 +113,13 @@ void follow_main()
    time_reset();
    while(get_ms() < 1000);
    auto_calibrate();
+   time_reset();
+
+   while( !button_is_pressed(BUTTON_B) );
+   while( button_is_pressed(BUTTON_B) );
+   while( !button_is_pressed(BUTTON_B) );
+   time_reset();
+   while(get_ms() < 1000);
 
    const float steer_setpoint = 0.0f;
    float line_position_left = 0.0f;
@@ -85,6 +128,8 @@ void follow_main()
    float steer_error_previous = 0.0f;
    float steer_error_delta = 0.0f;
    float steer_command_left = 0.0f;
+
+   float max_abs_steer_error = 0.0f;
 
    while( !button_is_pressed(BUTTON_B) )
    {
@@ -102,6 +147,22 @@ void follow_main()
       actuate_steer_command_left( steer_command_left );
 
       steer_error_previous = steer_error;
-   } 
+      max_abs_steer_error = fmaxf( fabsf( steer_error ), max_abs_steer_error );
+   }
+
+   set_motors( 0, 0 );
+
+   long max_error = (long)(1000.0f * max_abs_steer_error);
+
+   clear();
+   lcd_goto_xy(0,0);
+   print_long( max_error );
+   lcd_goto_xy(0,1);
+   print_from_program_space(back_line2);
+
+   while( button_is_pressed(BUTTON_B) );
+   time_reset();
+   while(get_ms() < 500);
+   while( !button_is_pressed(BUTTON_B) );
 }
 
