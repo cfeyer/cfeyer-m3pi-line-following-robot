@@ -59,14 +59,6 @@ static void auto_calibrate() // Borrow from Pololu's serial-slave.c
    while( get_ms() < rest_delay_ms );
 }
 
-float sense_line_position_left()
-{
-   unsigned int sensor_readings[5] = {0};
-   int line_position = read_line( sensor_readings, IR_EMITTERS_ON );
-   return ((float)line_position - 2048.0f)/(2048.0f);
-}
-
-
 float bound( float x, float x_min, float x_max )
 {
    float y = 0.0;
@@ -113,7 +105,16 @@ void follow_main()
    time_reset();
    while(get_ms() < 1000);
    auto_calibrate();
-   time_reset();
+
+   const unsigned int * const sensors_calibrated_min_on = get_line_sensors_calibrated_minimum_on();
+   const unsigned int * const sensors_calibrated_max_on = get_line_sensors_calibrated_maximum_on();
+
+   unsigned int sensor_detection_thresholds[5] = { 0 };
+   int i = 0;
+   for( i = 0; i < 5; i++ )
+   {
+      sensor_detection_thresholds[i] = (sensors_calibrated_min_on[i] + sensors_calibrated_max_on[i])/4;
+   }
 
    while( !button_is_pressed(BUTTON_B) );
    while( button_is_pressed(BUTTON_B) );
@@ -133,21 +134,37 @@ void follow_main()
 
    while( !button_is_pressed(BUTTON_B) )
    {
-      line_position_left = sense_line_position_left();
+      unsigned int sensor_readings[5] = {0};
+      int raw_line_position = read_line( sensor_readings, IR_EMITTERS_ON );
 
-      steer_error = steer_setpoint - line_position_left;
-      steer_error_cumulative += steer_error;
-      steer_error_delta = steer_error - steer_error_previous;
+      int line_detected = 0;
+      for( i = 0; i < 5; i++ )
+      {
+         line_detected = line_detected || (sensor_readings[i] >= sensor_detection_thresholds[i]);
+      }
 
-      steer_command_left = feedback_sign *
-                                   ( kp * steer_error
-                                   + ki * steer_error_cumulative
-                                   + kd * steer_error_delta );
+      if( line_detected )
+      {
+         line_position_left = ((float)raw_line_position - 2048.0f)/(2048.0f);
 
-      actuate_steer_command_left( steer_command_left );
+         steer_error = steer_setpoint - line_position_left;
+         steer_error_cumulative += steer_error;
+         steer_error_delta = steer_error - steer_error_previous;
 
-      steer_error_previous = steer_error;
-      max_abs_steer_error = fmaxf( fabsf( steer_error ), max_abs_steer_error );
+         steer_command_left = feedback_sign *
+                                      ( kp * steer_error
+                                      + ki * steer_error_cumulative
+                                      + kd * steer_error_delta );
+
+         actuate_steer_command_left( steer_command_left );
+
+         steer_error_previous = steer_error;
+         max_abs_steer_error = fmaxf( fabsf( steer_error ), max_abs_steer_error );
+      }
+      else
+      {
+         set_motors( 0, 0 );
+      }
    }
 
    set_motors( 0, 0 );
