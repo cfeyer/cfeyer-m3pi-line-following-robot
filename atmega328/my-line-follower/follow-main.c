@@ -7,6 +7,8 @@
 
 #include "follow-controller-constants.h"
 
+#include "telemetry.h"
+
 static const char back_line2[] PROGMEM = "\6B";
 
 static void calibrate_rotate_left()
@@ -111,6 +113,8 @@ void actuate_steer_command_left( float steer_command_left )
 
 void follow_main()
 {
+   telemetry_init();
+
    clear();
    lcd_goto_xy(0,1);
    print_from_program_space(back_line2);
@@ -136,6 +140,8 @@ void follow_main()
    while( !button_is_pressed(BUTTON_B) );
    time_reset();
    while(get_ms() < 1000);
+
+   int frame_number = 0;
 
    const float steer_setpoint = 0.0f;
    float line_position_left = 0.0f;
@@ -168,6 +174,7 @@ void follow_main()
          steer_error_cumulative += steer_error;
          steer_error_delta = steer_error - steer_error_previous;
 
+         // TODO - Factor out dt_ms = 10
          steer_command_left = feedback_sign *
                                       ( kp * steer_error
                                       + ki * steer_error_cumulative
@@ -175,13 +182,19 @@ void follow_main()
 
          actuate_steer_command_left( steer_command_left );
 
+         telemetry_send_frame_report( frame_number, 1, line_position_left, steer_command_left );
+
          steer_error_previous = steer_error;
          max_abs_steer_error = fmaxf( fabsf( steer_error ), max_abs_steer_error );
       }
       else
       {
          set_motors( 0, 0 );
+
+         telemetry_send_frame_report( frame_number, 0, 0.0f, 0.0f );
       }
+
+
 
       if( get_ms() < 10 )
       {
@@ -194,6 +207,8 @@ void follow_main()
          print( "overrun" );
          while(1);
       }
+
+      frame_number++;
    }
 
    set_motors( 0, 0 );
